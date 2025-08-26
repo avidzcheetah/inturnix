@@ -1,0 +1,25 @@
+import { Schema, model } from "mongoose";
+
+const eventSchema = new Schema({
+  title: String,
+  date: Date,
+  time: String,
+  location: String,
+  eventType: String, // e.g., Individulal, Team
+  MaxNoOfParticipantsPerTeam: Number,
+  description: String,
+  status:String,
+  category: String,
+  pointsConfiguration: [Number] ,// first element is points for first place, second for second place, etc.
+  winners:String,
+  firstRunnerUp: String,
+  secondRunnerUp: String,
+  thirdRunnerUp: String,
+  maxTeamsPerBatch: Number,
+  expectedFinishTime: String,
+
+  
+
+});
+
+export default model("eventSchema", eventSchema);
