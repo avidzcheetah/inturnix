@@ -30,42 +30,69 @@ class StudentController {
   }
 
 static async updateStudent(req, res) {
-    try {
-      const studentId = req.params.id;
-      const student = await Student.findById(studentId);
-      if (!student) return res.status(404).json({ message: "Student not found" });
+  try {
+    const studentId = req.params.id;
+    const student = await Student.findById(studentId);
+    if (!student) return res.status(404).json({ message: "Student not found" });
 
-      // Update text fields
-      Object.keys(req.body).forEach(key => student[key] = req.body[key]);
+    // Update text fields, but skip 'profilePicture' and 'cv'
+    Object.keys(req.body).forEach(key => {
+      if (key !== "profilePicture" && key !== "cv" && key!=="skills" && key!=="RecentNotifications") {
+        student[key] = req.body[key];
+      }
+    });
 
-      // Update files if uploaded
-      if (req.files) {
-        if (req.files.cv) {
-          student.cv = {
-            data: req.files.cv[0].buffer,
-            contentType: req.files.cv[0].mimetype,
-            filename: req.files.cv[0].originalname,
-            uploadDate: new Date()
-          };
-        }
-        if (req.files.profilePicture) {
-          student.profilePicture = {
-            data: req.files.profilePicture[0].buffer,
-            contentType: req.files.profilePicture[0].mimetype,
-            filename: req.files.profilePicture[0].originalname,
-            uploadDate: new Date()
-          };
-        }
+   if (req.body.skills) {
+  try {
+    student.skills = JSON.parse(req.body.skills); // convert string → array
+  } catch (e) {
+    student.skills = []; // fallback if parse fails
+  }
+}
+
+  if (req.body.RecentNotifications) {
+  try {
+    student.RecentNotifications = JSON.parse(req.body.RecentNotifications); // convert string → array
+  } catch (e) {
+    student.RecentNotifications = []; // fallback if parse fails
+  }
+}
+
+    // Update files if uploaded and they are actual files
+    if (req.files) {
+      // CV
+      if (req.files.cv && req.files.cv[0] && req.files.cv[0].buffer) {
+        student.cv = {
+          data: req.files.cv[0].buffer,
+          contentType: req.files.cv[0].mimetype,
+          filename: req.files.cv[0].originalname,
+          uploadDate: new Date()
+        };
       }
 
-      await student.save();
-      res.status(200).json({ message: "Student updated successfully", student });
-
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: "Server error", error });
+      // Profile picture
+      if (
+        req.files.profilePicture &&
+        req.files.profilePicture[0] &&
+        req.files.profilePicture[0].buffer
+      ) {
+        student.profilePicture = {
+          data: req.files.profilePicture[0].buffer,
+          contentType: req.files.profilePicture[0].mimetype,
+          filename: req.files.profilePicture[0].originalname,
+          uploadDate: new Date()
+        };
+      }
     }
+
+    await student.save();
+    res.status(200).json({ message: "Student updated successfully", student });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error", error });
   }
+}
+
 
   static async getAllStudents(req, res) {
     try {
@@ -118,6 +145,48 @@ static async updateStudent(req, res) {
       res.status(500).json({ message: "Server error", error });
     }
   }
+
+// Student login / verification (plain text password)
+static async loginStudent(req, res) {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ message: "Email and password are required" });
+    }
+
+    // Find student by email
+    const student = await Student.findOne({ email });
+    if (!student) {
+      return res.status(401).json({ exists: false, message: "Invalid email or password" });
+    }
+
+    // Compare password directly (plain text)
+    if (student.password !== password) {
+      return res.status(401).json({ exists: false, message: "Invalid email or password" });
+    }
+
+    // Convert profile picture to Base64 if exists
+    let profilePictureBase64 = null;
+    if (student.profilePicture && student.profilePicture.data) {
+      profilePictureBase64 = student.profilePicture.data.toString('base64');
+    }
+
+    return res.status(200).json({
+      exists: true,
+      id: student._id,
+    
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error", error });
+  }
+}
+
+
+
+
 }
 
 

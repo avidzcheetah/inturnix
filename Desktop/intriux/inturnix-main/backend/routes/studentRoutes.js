@@ -25,9 +25,11 @@ router.get("/getAllStudents", StudentController.getAllStudents);
 router.get("/getStudentById/:id", StudentController.getStudentById);
 
 // Fetch CV file
-router.get("/getCV/:id/", StudentController.getCV);
+router.get("/getCV/:id", StudentController.getCV);
 
 // Fetch profile picture
 router.get("/getProfilePicture/:id", StudentController.getProfilePicture);
 
+//verifies student
+router.post("/loginStudent",StudentController.loginStudent);
 export default router;
